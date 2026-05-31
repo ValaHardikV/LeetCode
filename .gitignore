@@ -1,0 +1,14 @@
+# Ignore everything
+*
+
+!.gitignore
+
+!LeetCode_Backend/
+!LeetCode_Backend/**
+
+!LeetCode_Frontend/
+!LeetCode_Frontend/**
+
+# Environment files
+**/.env
+**/.env.*
