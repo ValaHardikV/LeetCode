@@ -249,11 +249,6 @@ async function submittedProblem(req, res){
         // skip id, userId and problemId from result
         const result = await Submission.find({userId, problemId}).select('-_id -userId -problemId');
 
-        if(result.length == 0) {
-            res.status(200).send("Not any submssion of user for this problem");
-            return;
-        }
-
         res.status(200).send(result);
     }
     catch(err){
