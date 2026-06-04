@@ -3,7 +3,7 @@ import { getLanguageById, CreatesubmitBatch, getBatchResult, getErrorbyId } from
 import Problem from "../Models/problemSchema.js";
 import User from "../Models/userSchema.js";
 import Submission from "../Models/submission.js";
-
+import SolutionVideo from "../Models/solutionVideo.js"
 
 async function createProblem(req, res) {
     try {
@@ -189,6 +189,17 @@ async function getProblemById(req, res){
         if(!DSAProblem){
             res.status(400).send("Problem not found for this id");
             return;
+        }
+
+
+        // send video information also
+        const video = await SolutionVideo.findOne({problemId: id});
+
+        if(video){
+            DSAProblem.secureUrl = secureUrl;
+            DSAProblem.cloudinaryPublicId = cloudinaryPublicId;
+            DSAProblem.thumbnailUrl = thumbnailUrl;
+            DSAProblem.duration = duration;
         }
 
         res.status(200).send(DSAProblem);

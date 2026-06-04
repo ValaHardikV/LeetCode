@@ -11,6 +11,7 @@ import AuthRouter from "./Routes/AuthRouter.js";
 import problemRouter from "./Routes/problemRouter.js";
 import submitRouter from "./Routes/submit.js";
 import aiRouter from "./Routes/aiChatting.js";
+import videoRouter from "./Routes/videoCreator.js"
 
 
 const app = express();
@@ -32,6 +33,7 @@ app.use("/auth", AuthRouter);
 app.use("/problem", problemRouter);
 app.use("/submission", submitRouter);
 app.use("/ai",aiRouter);
+app.use("/video", videoRouter);
 
 
 async function IntilizationConnection(){
