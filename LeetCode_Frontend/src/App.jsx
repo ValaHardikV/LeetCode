@@ -9,6 +9,8 @@ import Admin from "./pages/Admin.jsx";
 import ProblemPage from "./pages/Problempage.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
 import AdminDelete from "./components/AdminDelete.jsx";
+import AdminVideo from "./components/AdminVideo.jsx"
+import AdminUpload from "./components/AdminUpload.jsx"
 
 
 
@@ -43,6 +45,7 @@ function App() {
 
                 {/* if user authoticated then direct go home page, no need to go login or signup page  */}
                 <Route path="/login" element={isAuthenticated ? <Navigate to={"/"}></Navigate> : <Login></Login>}></Route>
+                
                 <Route path="/signup" element={isAuthenticated ? <Navigate to={"/"}></Navigate> : <Signup></Signup>}></Route>
 
                 {/* only give access to admin for admin dashboard */}
@@ -54,6 +57,10 @@ function App() {
                 <Route path="/admin/create" element={isAuthenticated && user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" />} />
 
                 <Route path="/admin/delete" element={isAuthenticated && user?.role === 'admin' ? <AdminDelete /> : <Navigate to="/" />} />
+
+                <Route path="/admin/video" element={isAuthenticated && user?.role === 'admin' ? <AdminVideo /> : <Navigate to="/" />} />
+
+                <Route path="/admin/upload/:problemId" element={isAuthenticated && user?.role === 'admin' ? <AdminUpload /> : <Navigate to="/" />} />
 
                 {/* admin update functinality not create at */}
 

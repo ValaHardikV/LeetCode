@@ -10,6 +10,6 @@ videoRouter.get("/create/:problemId",verifyAdmin,generateUploadSignature);
 
 videoRouter.post("/save",verifyAdmin,saveVideoMetadata);
 
-videoRouter.delete("/delete/:videoId",verifyAdmin,deleteVideo);
+videoRouter.delete("/delete/:problemId",verifyAdmin,deleteVideo);
 
 export default videoRouter;

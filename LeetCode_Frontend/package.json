@@ -16,6 +16,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "axios": "^1.16.1",
     "daisyui": "^5.5.20",
+    "form-data": "^4.0.5",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
