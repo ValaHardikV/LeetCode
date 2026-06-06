@@ -23,7 +23,8 @@ app.use(cookieParser());
 app.use(cors(
     {
         // if we want that anyone access our backend then we use origin: "*"
-        origin: 'http://localhost:5173',
+        // origin: 'http://localhost:5173',
+        origin: true,
         credentials: true // attech token and otherthings if request comes from this
     }
 ));

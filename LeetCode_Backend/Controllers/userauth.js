@@ -20,7 +20,12 @@ export const register = async (req, res)=>{
 
         const jwtToken = await jwt.sign({id:user._id, emailId:user.emailId, role:'user'}, process.env.JWT_PRIVATE_KEY, {expiresIn: 60*60}); // after 1 hour token in valid
 
-        res.cookie("token", jwtToken, {maxAge:60*60*1000}); // after 1 hour cookie clear
+        res.cookie("token", jwtToken, {
+            maxAge:60*60*1000,
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        });
 
         // insted of just send messge send userinfo also
         const reply = {
@@ -68,7 +73,12 @@ export const login = async (req, res)=>{
 
         const jwtToken = await jwt.sign({id:user._id, emailId:user.emailId, role:user.role}, process.env.JWT_PRIVATE_KEY, {expiresIn: 60*60}); // after 1 hour token in valid
 
-        res.cookie("token", jwtToken, {maxAge:60*60*1000}); // after 1 hour cookie clear
+        res.cookie("token", jwtToken, {
+            maxAge:60*60*1000,
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        }); // after 1 hour cookie clear
 
         // insted of just send messge send userinfo also
         const reply = {
