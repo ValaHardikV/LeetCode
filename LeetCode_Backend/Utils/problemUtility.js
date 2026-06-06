@@ -5,6 +5,7 @@ function getLanguageById(language) {
 
     const lan = {
         "cpp": 105,
+        "c++" : 105,
         "java": 91,
         "javascript": 63
     }

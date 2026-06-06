@@ -8,9 +8,9 @@ import ChatAi from '../components/ChatAi.jsx';
 import Editorial from '../components/Editorial.jsx';
 
 const langMap = {
-	cpp: 'cpp',
-	java: 'java',
-	javascript: 'javascript'
+	cpp: 'C++',
+	java: 'Java',
+	javascript: 'JavaScript'
 };
 
 const ProblemPage = () => {

@@ -7,11 +7,8 @@ import SolutionVideo from "../Models/solutionVideo.js"
 
 async function createProblem(req, res) {
     try {
-        console.log(req.body);
         
         const { title, description, difficulty, tags, visibleTestCases, hiddenTestCases, startCode, referenceSolution } = req.body;
-
-        // console.log(req.body);
 
         // check that admin provide referenceSolution that correct or not
         for (const { language, completeCode } of referenceSolution) {
@@ -56,7 +53,6 @@ async function createProblem(req, res) {
             }
 
         }
-
 
         // once we verify that all reference solution is correct, now we store into DB
         const userProblem = await Problem.create({

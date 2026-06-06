@@ -1,299 +1,513 @@
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import axiosClient from '../utils/axiosClient';
 import { useNavigate } from 'react-router';
+import axiosClient from '../utils/axiosClient';
 
-// Zod schema matching the problem schema
 const problemSchema = z.object({
-	title: z.string().min(1, 'Title is required'),
-	description: z.string().min(1, 'Description is required'),
-	difficulty: z.enum(['easy', 'medium', 'hard']),
-	tags: z.enum(['array', 'linkedList', 'graph', 'dp']),
-	visibleTestCases: z.array(
-		z.object({
-			input: z.string().min(1, 'Input is required'),
-			output: z.string().min(1, 'Output is required'),
-			explanation: z.string().min(1, 'Explanation is required')
-		})
-	).min(1, 'At least one visible test case required'),
-	hiddenTestCases: z.array(
-		z.object({
-			input: z.string().min(1, 'Input is required'),
-			output: z.string().min(1, 'Output is required')
-		})
-	).min(1, 'At least one hidden test case required'),
-	startCode: z.array(
-		z.object({
-			language: z.enum(['C++', 'Java', 'JavaScript']),
-			initialCode: z.string().min(1, 'Initial code is required')
-		})
-	).length(3, 'All three languages required'),
-	referenceSolution: z.array(
-		z.object({
-			language: z.enum(['C++', 'Java', 'JavaScript']),
-			completeCode: z.string().min(1, 'Complete code is required')
-		})
-	).length(3, 'All three languages required')
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().min(1, 'Description is required'),
+  difficulty: z.enum(['easy', 'medium', 'hard'], {
+	required_error: 'Difficulty is required',
+  }),
+  tags: z.enum(['array', 'linkedList', 'graph', 'dp'], {
+	required_error: 'Tag is required',
+  }),
+  visibleTestCases: z
+	.array(
+	  z.object({
+		input: z.string().min(1, 'Input is required'),
+		output: z.string().min(1, 'Output is required'),
+		explanation: z.string().min(1, 'Explanation is required'),
+	  })
+	)
+	.min(1, 'At least one visible test case is required'),
+  hiddenTestCases: z
+	.array(
+	  z.object({
+		input: z.string().min(1, 'Input is required'),
+		output: z.string().min(1, 'Output is required'),
+	  })
+	)
+	.min(1, 'At least one hidden test case is required'),
+  startCode: z
+	.array(
+	  z.object({
+		language: z.enum(['C++', 'Java', 'JavaScript']),
+		initialCode: z.string().min(1, 'Initial code is required'),
+	  })
+	)
+	.length(3, 'All three languages are required'),
+  referenceSolution: z
+	.array(
+	  z.object({
+		language: z.enum(['C++', 'Java', 'JavaScript']),
+		completeCode: z.string().min(1, 'Complete code is required'),
+	  })
+	)
+	.length(3, 'All three languages are required'),
 });
 
+const languageLabels = ['C++', 'Java', 'JavaScript'];
+
+function FieldError({ message }) {
+  if (!message) return null;
+
+  return (
+	<div className="mt-2 inline-flex items-center gap-2 rounded-full bg-error/10 px-3 py-1 text-sm text-error">
+	  <span className="font-semibold">Error</span>
+	  <span>{message}</span>
+	</div>
+  );
+}
+
+function SectionHeader({ title, subtitle }) {
+  return (
+	<div className="mb-5">
+	  <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+	  {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+	</div>
+  );
+}
+
 function AdminPanel() {
-	const navigate = useNavigate();
-	const {
-		register,
-		control,
-		handleSubmit,
-		formState: { errors }
-	} = useForm({
-		resolver: zodResolver(problemSchema),
-		defaultValues: {
-			startCode: [
-				{ language: 'Cpp', initialCode: '' },
-				{ language: 'Java', initialCode: '' },
-				{ language: 'JavaScript', initialCode: '' }
-			],
-			referenceSolution: [
-				{ language: 'Cpp', completeCode: '' },
-				{ language: 'Java', completeCode: '' },
-				{ language: 'JavaScript', completeCode: '' }
-			]
-		}
-	});
+  const navigate = useNavigate();
+  const [serverMessage, setServerMessage] = useState(null);
 
-	const {
-		fields: visibleFields,
-		append: appendVisible,
-		remove: removeVisible
-	} = useFieldArray({
-		control,
-		name: 'visibleTestCases'
-	});
+  const {
+	register,
+	control,
+	handleSubmit,
+	formState: { errors, isSubmitting },
+  } = useForm({
+	resolver: zodResolver(problemSchema),
+	mode: 'onTouched',
+	reValidateMode: 'onChange',
+	defaultValues: {
+	  title: '',
+	  description: '',
+	  difficulty: 'easy',
+	  tags: 'array',
+	  visibleTestCases: [
+		{
+		  input: '',
+		  output: '',
+		  explanation: '',
+		},
+	  ],
+	  hiddenTestCases: [
+		{
+		  input: '',
+		  output: '',
+		},
+	  ],
+	  startCode: [
+		{ language: 'C++', initialCode: '' },
+		{ language: 'Java', initialCode: '' },
+		{ language: 'JavaScript', initialCode: '' },
+	  ],
+	  referenceSolution: [
+		{ language: 'C++', completeCode: '' },
+		{ language: 'Java', completeCode: '' },
+		{ language: 'JavaScript', completeCode: '' },
+	  ],
+	},
+  });
 
-	const {
-		fields: hiddenFields,
-		append: appendHidden,
-		remove: removeHidden
-	} = useFieldArray({
-		control,
-		name: 'hiddenTestCases'
-	});
+  const {
+	fields: visibleFields,
+	append: appendVisible,
+	remove: removeVisible,
+  } = useFieldArray({
+	control,
+	name: 'visibleTestCases',
+  });
 
-	const onSubmit = async (data) => {
-		try {
-			await axiosClient.post('/problem/create', data);
-			alert('Problem created successfully!');
-			navigate('/');
-		} catch (error) {
-			alert(`Error: ${error.response?.data?.message || error.message}`);
-		}
-	};
+  const {
+	fields: hiddenFields,
+	append: appendHidden,
+	remove: removeHidden,
+  } = useFieldArray({
+	control,
+	name: 'hiddenTestCases',
+  });
 
-	return (
-		<div className="container mx-auto p-6">
-			<h1 className="text-3xl font-bold mb-6">Create New Problem</h1>
+  const onSubmit = async (data) => {
+	setServerMessage(null);
 
-			<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-				{/* Basic Information */}
-				<div className="card bg-base-100 shadow-lg p-6">
-					<h2 className="text-xl font-semibold mb-4">Basic Information</h2>
-					<div className="space-y-4">
-						<div className="form-control">
-							<label className="label">
-								<span className="label-text">Title</span>
-							</label>
-							<input
-								{...register('title')}
-								className={`input input-bordered ${errors.title && 'input-error'}`}
-							/>
-							{errors.title && (
-								<span className="text-error">{errors.title.message}</span>
-							)}
-						</div>
+	try {
+	  await axiosClient.post('/problem/create', data);
+	  setServerMessage({
+		type: 'success',
+		text: 'Problem created successfully.',
+	  });
+	  navigate('/');
+	} catch (error) {
+	  setServerMessage({
+		type: 'error',
+		text: error.response?.data?.message || error.message || 'Something went wrong.',
+	  });
+	}
+  };
 
-						<div className="form-control">
-							<label className="label">
-								<span className="label-text">Description</span>
-							</label>
-							<textarea
-								{...register('description')}
-								className={`textarea textarea-bordered h-32 ${errors.description && 'textarea-error'}`}
-							/>
-							{errors.description && (
-								<span className="text-error">{errors.description.message}</span>
-							)}
-						</div>
+  const inputClass = (hasError) =>
+	[
+	  'input input-bordered w-full bg-white text-slate-900 placeholder:text-slate-400',
+	  'focus:outline-none focus:ring-2 focus:ring-primary/30',
+	  hasError ? 'input-error border-error' : 'border-slate-200',
+	].join(' ');
 
-						<div className="flex gap-4">
-							<div className="form-control w-1/2">
-								<label className="label">
-									<span className="label-text">Difficulty</span>
-								</label>
-								<select
-									{...register('difficulty')}
-									className={`select select-bordered ${errors.difficulty && 'select-error'}`}
-								>
-									<option value="easy">Easy</option>
-									<option value="medium">Medium</option>
-									<option value="hard">Hard</option>
-								</select>
-							</div>
+  const textareaClass = (hasError) =>
+	[
+	  'textarea textarea-bordered w-full bg-white text-slate-900 placeholder:text-slate-400',
+	  'focus:outline-none focus:ring-2 focus:ring-primary/30',
+	  hasError ? 'textarea-error border-error' : 'border-slate-200',
+	].join(' ');
 
-							<div className="form-control w-1/2">
-								<label className="label">
-									<span className="label-text">Tag</span>
-								</label>
-								<select
-									{...register('tags')}
-									className={`select select-bordered ${errors.tags && 'select-error'}`}
-								>
-									<option value="array">Array</option>
-									<option value="linkedList">Linked List</option>
-									<option value="graph">Graph</option>
-									<option value="dp">DP</option>
-								</select>
-							</div>
-						</div>
-					</div>
-				</div>
+  const selectClass = (hasError) =>
+	[
+	  'select select-bordered w-full bg-white text-slate-900',
+	  'focus:outline-none focus:ring-2 focus:ring-primary/30',
+	  hasError ? 'select-error border-error' : 'border-slate-200',
+	].join(' ');
 
-				{/* Test Cases */}
-				<div className="card bg-base-100 shadow-lg p-6">
-					<h2 className="text-xl font-semibold mb-4">Test Cases</h2>
+  const cardClass =
+	'rounded-3xl border border-slate-200 bg-white/90 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur';
 
-					{/* Visible Test Cases */}
-					<div className="space-y-4 mb-6">
-						<div className="flex justify-between items-center">
-							<h3 className="font-medium">Visible Test Cases</h3>
-							<button
-								type="button"
-								onClick={() => appendVisible({ input: '', output: '', explanation: '' })}
-								className="btn btn-sm btn-primary"
-							>
-								Add Visible Case
-							</button>
-						</div>
+  const labelClass = 'label pb-1';
+  const labelTextClass = 'label-text font-medium text-slate-700';
 
-						{visibleFields.map((field, index) => (
-							<div key={field.id} className="border p-4 rounded-lg space-y-2">
-								<div className="flex justify-end">
-									<button
-										type="button"
-										onClick={() => removeVisible(index)}
-										className="btn btn-xs btn-error"
-									>
-										Remove
-									</button>
-								</div>
+  return (
+	<div className="min-h-screen bg-linear-to-br from-slate-50 via-sky-50 to-indigo-100 px-4 py-8">
+	  <div className="mx-auto max-w-7xl">
+		<div className="mb-8 rounded-3xl border border-white/70 bg-white/70 p-6 shadow-xl backdrop-blur">
+		  <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+			<div>
+			  <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+				Admin Panel
+			  </div>
+			  <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
+				Create New Problem
+			  </h1>
+			</div>
 
-								<input
-									{...register(`visibleTestCases.${index}.input`)}
-									placeholder="Input"
-									className="input input-bordered w-full"
-								/>
+		  </div>
 
-								<input
-									{...register(`visibleTestCases.${index}.output`)}
-									placeholder="Output"
-									className="input input-bordered w-full"
-								/>
-
-								<textarea
-									{...register(`visibleTestCases.${index}.explanation`)}
-									placeholder="Explanation"
-									className="textarea textarea-bordered w-full"
-								/>
-							</div>
-						))}
-					</div>
-
-					{/* Hidden Test Cases */}
-					<div className="space-y-4">
-						<div className="flex justify-between items-center">
-							<h3 className="font-medium">Hidden Test Cases</h3>
-							<button
-								type="button"
-								onClick={() => appendHidden({ input: '', output: '' })}
-								className="btn btn-sm btn-primary"
-							>
-								Add Hidden Case
-							</button>
-						</div>
-
-						{hiddenFields.map((field, index) => (
-							<div key={field.id} className="border p-4 rounded-lg space-y-2">
-								<div className="flex justify-end">
-									<button
-										type="button"
-										onClick={() => removeHidden(index)}
-										className="btn btn-xs btn-error"
-									>
-										Remove
-									</button>
-								</div>
-
-								<input
-									{...register(`hiddenTestCases.${index}.input`)}
-									placeholder="Input"
-									className="input input-bordered w-full"
-								/>
-
-								<input
-									{...register(`hiddenTestCases.${index}.output`)}
-									placeholder="Output"
-									className="input input-bordered w-full"
-								/>
-							</div>
-						))}
-					</div>
-				</div>
-
-				{/* Code Templates */}
-				<div className="card bg-base-100 shadow-lg p-6">
-					<h2 className="text-xl font-semibold mb-4">Code Templates</h2>
-
-					<div className="space-y-6">
-						{[0, 1, 2].map((index) => (
-							<div key={index} className="space-y-2">
-								<h3 className="font-medium">
-									{index === 0 ? 'C++' : index === 1 ? 'Java' : 'JavaScript'}
-								</h3>
-
-								<div className="form-control">
-									<label className="label">
-										<span className="label-text">Initial Code</span>
-									</label>
-									<pre className="bg-base-300 p-4 rounded-lg">
-										<textarea
-											{...register(`startCode.${index}.initialCode`)}
-											className="w-full bg-transparent font-mono"
-											rows={6}
-										/>
-									</pre>
-								</div>
-
-								<div className="form-control">
-									<label className="label">
-										<span className="label-text">Reference Solution</span>
-									</label>
-									<pre className="bg-base-300 p-4 rounded-lg">
-										<textarea
-											{...register(`referenceSolution.${index}.completeCode`)}
-											className="w-full bg-transparent font-mono"
-											rows={6}
-										/>
-									</pre>
-								</div>
-							</div>
-						))}
-					</div>
-				</div>
-
-				<button type="submit" className="btn btn-primary w-full">
-					Create Problem
-				</button>
-			</form>
+		  {serverMessage ? (
+			<div
+			  className={`alert mt-5 ${
+				serverMessage.type === 'success' ? 'alert-success' : 'alert-error'
+			  }`}
+			>
+			  <span>{serverMessage.text}</span>
+			</div>
+		  ) : null}
 		</div>
-	);
+
+		<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+		  {/* Basic Information */}
+		  <section className={cardClass}>
+
+			<div className="grid gap-6 px-6 py-6 md:grid-cols-2">
+			  <div className="md:col-span-2">
+				<div className="form-control">
+				  <label className={labelClass}>
+					<span className={labelTextClass}>Title</span>
+				  </label>
+				  <input
+					{...register('title')}
+					placeholder="Enter problem title"
+					className={inputClass(!!errors.title)}
+					aria-invalid={!!errors.title}
+				  />
+				  <FieldError message={errors.title?.message} />
+				</div>
+			  </div>
+
+			  <div className="md:col-span-2">
+				<div className="form-control">
+				  <label className={labelClass}>
+					<span className={labelTextClass}>Description</span>
+				  </label>
+				  <textarea
+					{...register('description')}
+					placeholder="Write the full problem statement..."
+					rows={7}
+					className={textareaClass(!!errors.description)}
+					aria-invalid={!!errors.description}
+				  />
+				  <FieldError message={errors.description?.message} />
+				</div>
+			  </div>
+
+			  <div>
+				<div className="form-control">
+				  <label className={labelClass}>
+					<span className={labelTextClass}>Difficulty</span>
+				  </label>
+				  <select
+					{...register('difficulty')}
+					className={selectClass(!!errors.difficulty)}
+					aria-invalid={!!errors.difficulty}
+				  >
+					<option value="easy">Easy</option>
+					<option value="medium">Medium</option>
+					<option value="hard">Hard</option>
+				  </select>
+				  <FieldError message={errors.difficulty?.message} />
+				</div>
+			  </div>
+
+			  <div>
+				<div className="form-control">
+				  <label className={labelClass}>
+					<span className={labelTextClass}>Tag</span>
+				  </label>
+				  <select
+					{...register('tags')}
+					className={selectClass(!!errors.tags)}
+					aria-invalid={!!errors.tags}
+				  >
+					<option value="array">Array</option>
+					<option value="linkedList">Linked List</option>
+					<option value="graph">Graph</option>
+					<option value="dp">DP</option>
+				  </select>
+				  <FieldError message={errors.tags?.message} />
+				</div>
+			  </div>
+			</div>
+		  </section>
+
+		  {/* Test Cases */}
+		  <section className={cardClass}>
+
+			<div className="space-y-8 px-6 py-6">
+			  <div>
+				<div className="mb-4 flex items-center justify-between gap-4">
+				  <div>
+					<h3 className="text-lg font-semibold text-slate-900">Visible Test Cases</h3>
+					<p className="text-sm text-slate-500">
+					  These cases will be shown to users for understanding the problem.
+					</p>
+				  </div>
+				  <button
+					type="button"
+					onClick={() => appendVisible({ input: '', output: '', explanation: '' })}
+					className="btn btn-primary btn-sm rounded-full"
+				  >
+					+ Add Case
+				  </button>
+				</div>
+
+				<FieldError message={errors.visibleTestCases?.message} />
+
+				<div className="space-y-4">
+				  {visibleFields.map((field, index) => {
+					const caseError = errors.visibleTestCases?.[index] || {};
+					return (
+					  <div
+						key={field.id}
+						className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+					  >
+						<div className="mb-4 flex items-center justify-between">
+						  <div className="inline-flex items-center gap-2">
+							<span className="badge badge-primary badge-outline">
+							  Case {index + 1}
+							</span>
+						  </div>
+						  <button
+							type="button"
+							onClick={() => removeVisible(index)}
+							className="btn btn-error btn-sm btn-outline rounded-full"
+							disabled={visibleFields.length === 1}
+						  >
+							Remove
+						  </button>
+						</div>
+
+						<div className="grid gap-4 md:grid-cols-2">
+						  <div>
+							<input
+							  {...register(`visibleTestCases.${index}.input`)}
+							  placeholder="Input"
+							  className={inputClass(!!caseError.input)}
+							  aria-invalid={!!caseError.input}
+							/>
+							<FieldError message={caseError.input?.message} />
+						  </div>
+
+						  <div>
+							<input
+							  {...register(`visibleTestCases.${index}.output`)}
+							  placeholder="Output"
+							  className={inputClass(!!caseError.output)}
+							  aria-invalid={!!caseError.output}
+							/>
+							<FieldError message={caseError.output?.message} />
+						  </div>
+
+						  <div className="md:col-span-2">
+							<textarea
+							  {...register(`visibleTestCases.${index}.explanation`)}
+							  placeholder="Explanation"
+							  rows={4}
+							  className={textareaClass(!!caseError.explanation)}
+							  aria-invalid={!!caseError.explanation}
+							/>
+							<FieldError message={caseError.explanation?.message} />
+						  </div>
+						</div>
+					  </div>
+					);
+				  })}
+				</div>
+			  </div>
+
+			  <div>
+				<div className="mb-4 flex items-center justify-between gap-4">
+				  <div>
+					<h3 className="text-lg font-semibold text-slate-900">Hidden Test Cases</h3>
+					<p className="text-sm text-slate-500">
+					  These cases stay hidden and are used for final checking.
+					</p>
+				  </div>
+				  <button
+					type="button"
+					onClick={() => appendHidden({ input: '', output: '' })}
+					className="btn btn-primary btn-sm rounded-full"
+				  >
+					+ Add Case
+				  </button>
+				</div>
+
+				<FieldError message={errors.hiddenTestCases?.message} />
+
+				<div className="space-y-4">
+				  {hiddenFields.map((field, index) => {
+					const caseError = errors.hiddenTestCases?.[index] || {};
+					return (
+					  <div
+						key={field.id}
+						className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+					  >
+						<div className="mb-4 flex items-center justify-between">
+						  <div className="inline-flex items-center gap-2">
+							<span className="badge badge-secondary badge-outline">
+							  Hidden {index + 1}
+							</span>
+						  </div>
+						  <button
+							type="button"
+							onClick={() => removeHidden(index)}
+							className="btn btn-error btn-sm btn-outline rounded-full"
+							disabled={hiddenFields.length === 1}
+						  >
+							Remove
+						  </button>
+						</div>
+
+						<div className="grid gap-4 md:grid-cols-2">
+						  <div>
+							<input
+							  {...register(`hiddenTestCases.${index}.input`)}
+							  placeholder="Input"
+							  className={inputClass(!!caseError.input)}
+							  aria-invalid={!!caseError.input}
+							/>
+							<FieldError message={caseError.input?.message} />
+						  </div>
+
+						  <div>
+							<input
+							  {...register(`hiddenTestCases.${index}.output`)}
+							  placeholder="Output"
+							  className={inputClass(!!caseError.output)}
+							  aria-invalid={!!caseError.output}
+							/>
+							<FieldError message={caseError.output?.message} />
+						  </div>
+						</div>
+					  </div>
+					);
+				  })}
+				</div>
+			  </div>
+			</div>
+		  </section>
+
+		  {/* Code Templates */}
+		  <section className={cardClass}>
+			<div className="border-b border-slate-200 px-6 py-5">
+			  <SectionHeader
+				title="Code Templates"
+				subtitle="Provide starter code and the full reference solution for each supported language."
+			  />
+			</div>
+
+			<div className="space-y-6 px-6 py-6">
+			  {languageLabels.map((language, index) => {
+				const startCodeError = errors.startCode?.[index]?.initialCode;
+				const referenceError = errors.referenceSolution?.[index]?.completeCode;
+
+				return (
+				  <div key={language} className="rounded-2xl border border-slate-200 p-5">
+					<div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+					  <h3 className="text-lg font-semibold text-slate-900">{language}</h3>
+					  <span className="badge badge-ghost">{index + 1} / 3</span>
+					</div>
+
+					<div className="grid gap-5 lg:grid-cols-2">
+					  <div>
+						<label className={labelClass}>
+						  <span className={labelTextClass}>Initial Code</span>
+						</label>
+						<textarea
+						  {...register(`startCode.${index}.initialCode`)}
+						  rows={10}
+						  className={`${textareaClass(!!startCodeError)} font-mono text-sm`}
+						  placeholder={`Starter code for ${language}`}
+						  aria-invalid={!!startCodeError}
+						/>
+						<FieldError message={startCodeError?.message} />
+					  </div>
+
+					  <div>
+						<label className={labelClass}>
+						  <span className={labelTextClass}>Reference Solution</span>
+						</label>
+						<textarea
+						  {...register(`referenceSolution.${index}.completeCode`)}
+						  rows={10}
+						  className={`${textareaClass(!!referenceError)} font-mono text-sm`}
+						  placeholder={`Reference solution for ${language}`}
+						  aria-invalid={!!referenceError}
+						/>
+						<FieldError message={referenceError?.message} />
+					  </div>
+					</div>
+				  </div>
+				);
+			  })}
+			</div>
+		  </section>
+
+		  <button
+			type="submit"
+			className="btn btn-primary w-full rounded-2xl py-4 text-base font-semibold shadow-lg shadow-primary/20"
+			disabled={isSubmitting}
+		  >
+			{isSubmitting ? 'Creating Problem...' : 'Create Problem'}
+		  </button>
+		</form>
+	  </div>
+	</div>
+  );
 }
 
 export default AdminPanel;
+
+
+
+
