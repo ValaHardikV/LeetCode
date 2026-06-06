@@ -5,6 +5,7 @@ import { useParams } from 'react-router';
 import axiosClient from '../utils/axiosClient.js';
 import SubmissionHistory from "../components/SubmissionHistory.jsx"
 import ChatAi from '../components/ChatAi.jsx';
+import Editorial from '../components/Editorial.jsx';
 
 const langMap = {
 	cpp: 'cpp',
@@ -224,7 +225,7 @@ const ProblemPage = () => {
 								<div className="prose max-w-none">
 									<h2 className="text-xl font-bold mb-4">Editorial</h2>
 									<div className="whitespace-pre-wrap text-sm leading-relaxed">
-										{'Editorial is here for the problem'}
+										<Editorial secureUrl={problem.secureUrl} thumbnailUrl={problem.thumbnailUrl} duration={problem.duration}></Editorial>
 									</div>
 								</div>
 							)}

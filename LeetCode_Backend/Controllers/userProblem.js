@@ -196,10 +196,16 @@ async function getProblemById(req, res){
         const video = await SolutionVideo.findOne({problemId: id});
 
         if(video){
-            DSAProblem.secureUrl = secureUrl;
-            DSAProblem.cloudinaryPublicId = cloudinaryPublicId;
-            DSAProblem.thumbnailUrl = thumbnailUrl;
-            DSAProblem.duration = duration;
+
+            const response = {
+                ...DSAProblem.toObject(),
+                secureUrl: video.secureUrl,
+                thumbnailUrl : video.thumbnailUrl,
+                duration : video.duration
+            };
+            
+            res.status(200).send(response);
+            return;
         }
 
         res.status(200).send(DSAProblem);
