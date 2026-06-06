@@ -48,12 +48,12 @@ function AdminPanel() {
 		resolver: zodResolver(problemSchema),
 		defaultValues: {
 			startCode: [
-				{ language: 'C++', initialCode: '' },
+				{ language: 'Cpp', initialCode: '' },
 				{ language: 'Java', initialCode: '' },
 				{ language: 'JavaScript', initialCode: '' }
 			],
 			referenceSolution: [
-				{ language: 'C++', completeCode: '' },
+				{ language: 'Cpp', completeCode: '' },
 				{ language: 'Java', completeCode: '' },
 				{ language: 'JavaScript', completeCode: '' }
 			]
